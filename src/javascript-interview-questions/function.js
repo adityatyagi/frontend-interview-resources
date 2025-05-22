@@ -8,6 +8,9 @@
 // spread (passing - args) vs rest (params - receiving)
 // callback function e.g. eventListners, .map(cb), .filter(cb), setTimeout
 // arrow functions
+// diff between arrow and normal functions
+    // this, syntax, implicit return, "arguments" keyword
+
 
 
 
@@ -49,3 +52,17 @@ function testFunctionHoisting() {
 }
 
 testFunctionHoisting();
+
+
+let user = {
+    name: 'aditya',
+    rc1: () => {
+        // console.log('arrow', this.name); //<-- this points to global this
+    },
+    rc2: function() {
+        console.log('normal', this.name); //<-- this points to local object this
+    }
+}
+
+user.rc1();
+user.rc2();
