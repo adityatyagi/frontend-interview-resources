@@ -257,6 +257,58 @@ JSON.stringify(new Boolean(false))    // 'false'
 */
 
 
+// This basic version uses eval() — which is not safe for production but helps understand how JSON strings map to JavaScript objects.
+// ❌ Warning: Do NOT use in production — eval() is dangerous!
+// Never use in production due to XSS and code injection risk.
+function basicJSONParse(jsonString) {
+    try {
+        return eval('(' + jsonString + ')');
+    } catch (e) {
+        throw new Error("Invalid JSON: " + e.message);
+    }
+}
+
+// Example:
+basicJSONParse('{"a":1,"b":[2,3]}')  // → { a: 1, b: [2, 3] }
+
+// 📘 `return eval('(' + jsonString + ')')` — Notes
+
+// ✅ Purpose:
+// Parses a JSON string into a JavaScript object using eval().
+
+// 🔍 Step-by-Step Breakdown:
+
+// 1. eval(...)
+// - Executes a string as JavaScript code.
+// - Example:
+//   eval('2 + 2'); // → 4
+
+// 2. Why parentheses `()` around the JSON string?
+// - JSON objects start with `{}` which JS treats as a block statement unless wrapped.
+// - Example:
+//   eval('{ "a": 1 }'); // ❌ SyntaxError (JS thinks it's a block)
+//   eval('({"a": 1})'); // ✅ Interpreted as an object literal
+
+// 3. So this:
+//   eval('(' + jsonString + ')');
+//   becomes:
+//   eval('({"a":1})'); // → safely evaluates to a JS object
+
+// ⚠️ Security Warning:
+// - Dangerous in real applications.
+// - eval() can execute ANY JavaScript code, not just JSON:
+//   eval('alert("hacked!")'); // ❌ XSS or injection risk!
+// - Never use eval with untrusted or user-generated input.
+
+// 📌 When to use:
+// - ✅ Only in controlled environments like:
+//   - Learning/demos
+//   - Prototyping
+// - ❌ Never in production code
+
+// 🧠 Mnemonic to remember:
+// “Wrap to trap” — wrap the JSON string in `()` to force it into an expression context.
+
 
 
 
