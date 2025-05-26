@@ -1,3 +1,6 @@
+
+import readline from 'readline';
+
 // call -  - bind the obj/this context and takes the args as [] - invokes fun
 // apply - bind the obj/this context and takes the args as [] - invokes fun
 // bind - returns a fun that can be executed later with the set context for this
@@ -49,13 +52,13 @@ setTimeout(function(){
     console.log(data.getStatus.call(this));
 }, 1000);
 
-setTimeout(() => {
-    console.log(this)
-}, 1000);
+// setTimeout(() => {
+//     console.log(this)
+// }, 1000);
 
-setTimeout(function(){
-    console.log(this)
-}, 1000);
+// setTimeout(function(){
+//     console.log(this)
+// }, 1000);
 
 
 // At module level
@@ -86,7 +89,7 @@ const obj100 = {
     }
 };
 
-obj100.method();
+// obj100.method();
 
 
 const arrowFn = () => {
@@ -223,6 +226,170 @@ function boundChaining() {
 // once a function is bounded to an object it will always be bound to that. 
 boundChaining = boundChaining.bind({boundedName: 'aditya'}).bind({boundedName: 'anna'});
 boundChaining(); // aditya
+
+
+console.log('---check password---');
+
+
+function checkPassword(success, failed) {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+
+    rl.question('Enter password', (pass) => {
+        rl.close();
+        if (pass === 'hello') {
+            success();
+        } else {
+            failed();
+        }
+    })
+}
+
+let userPasswordCheck = {
+    name: 'aditya',
+    loginSuccess() {
+        console.log(`${this.name} logged in`);
+    },
+    loginFail() {
+        console.log(`${this.name} logged failed`);
+        
+    }
+}
+
+// giving userPasswordCheck.loginSuccess as a callback = standaloneFunctionReference which looses the reference to its objecth
+// checkPassword(userPasswordCheck.loginSuccess.bind(userPasswordCheck), userPasswordCheck.loginFail.bind(userPasswordCheck));
+
+
+console.log('-------- partial application for login -------');
+
+function checkPasswordPartial(success, failed) {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+
+    rl.question('Enter password', (pass) => {
+        rl.close();
+        if (pass === 'hello') {
+            success();
+        } else {
+            failed();
+        }
+    })
+}
+
+let userPasswordCheckPartial = {
+    name: 'aditya',
+    login(result) {
+        console.log(`${this.name} ${result ? 'login success' : 'login failed'} `);
+    }
+}
+
+checkPasswordPartial(userPasswordCheckPartial.login.bind(userPasswordCheckPartial, true),userPasswordCheckPartial.login.bind(userPasswordCheckPartial, false))
+
+
+console.log('-----arrow functions with call/apply/bind-----')
+//  Cannot be rebound with call, apply, or bind
+const ageForTest = 10;
+const personT = {
+    name: 'John',
+    age: 30,
+    printAgeArrow: () => {
+        console.log(`Arrow Function: ${this.age}`); // 'this' refers to the enclosing scope, undefined in strict mode in nodejs, else window in 
+    },
+    printAgeRegular: function() {
+        console.log(`Regular Function: ${this.age}`); // 'this' refers to the personT object
+    }
+};
+
+const personT2 = {
+    name: 'Mark',
+    age: 45,
+};
+// personT.printAgeArrow.call(personT2); // Arrow Function: undefined - error
+personT.printAgeRegular.call(personT2); // Regular Function: 45
+// we can't manipulate the context of an arrow function using call, apply, bind
+
+
+// POLLYFILLS for CALL APPLY BIND
+// reference
+// 1. function.call(objectToReferTo, args1, args2, ...argsN)
+// 2. obj.function.call(objectToReferTo, args1, args2, ...argsN)
+
+// 1. CALL
+Function.prototype.myCall = function(context = {}, ...args) {
+    // ensure myCall is being called on a function
+    if(typeof this !== 'function') {
+        throw new Error(this + ' is not callable');
+    }
+
+    // add the function to which the object (context) needs to be binded to the OBJECT itself
+    // {
+    //     fn() {
+    //         ...
+    //     }
+    // }
+    context.fn = this;
+    context.fn(...args)
+}
+
+Function.prototype.myApply = function(context = {}, args=[]) {
+    // ensure myCall is being called on a function
+    if(typeof this !== 'function') {
+        throw new Error(this + ' is not callable');
+    }
+
+    // add the function to which the object (context) needs to be binded to the OBJECT itself
+    // {
+    //     fn() {
+    //         ...
+    //     }
+    // }
+    context.fn = this;
+    context.fn(...args)
+}
+
+
+
+Function.prototype.myBind = function(context = {}, ...args) {
+    // ensure myCall is being called on a function
+    if(typeof this !== 'function') {
+        throw new Error(this + ' is not callable');
+    }
+    // add the function to which the object (context) needs to be binded to the OBJECT itself
+    // {
+    //     fn() {
+    //         ...
+    //     }
+    // }
+    context.fn = this;
+    return function (...newArgs) {
+        context.fn(...args, ...newArgs)
+    }
+
+}
+
+
+const car = {
+    color: 'Red',
+    price: '3000'
+};
+
+function printCarDetails(name, model) {
+    console.log(`Car Name: ${name}, Model: ${model}, Color: ${this.color} , Price: ${this.price}`);
+}
+
+// Invoke the function with .myCall binding to the car object
+printCarDetails.myCall(car, 'Tesla', 'ModelS');
+printCarDetails.myApply(car, ['Tesla', 'ModelS']);
+printCarDetails.myBind(car, 'Tesla', 'ModelS')();
+
+
+
+
+
 
 
 
