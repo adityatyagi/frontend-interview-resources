@@ -358,9 +358,9 @@ function closeModal(modal) {
 
     // Not better than setTimeout for closing animation
     // requestAnimationFrame doesn't wait for transitions
-    requestAnimationFrame(() => {
-        modal.remove();
-    });
+    // requestAnimationFrame(() => {
+    //     modal.remove();
+    // });
 }
 
 
