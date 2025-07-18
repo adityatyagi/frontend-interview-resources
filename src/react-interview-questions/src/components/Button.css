@@ -1,0 +1,102 @@
+/* A11y-focused, token-based styles for a scalable <Button> component. 
+   Interview takeaway: keep tokens + BEM-like modifiers => themes & variants scale with zero runtime cost. */
+
+.btn {
+  /* Layout */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  /* Box */
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+
+  /* Typography */
+  font-family: inherit;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+
+  /* Transitions */
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Focus ring uses CSS variable so designers can theme it without touching JS */
+.btn:focus-visible {
+  outline: 2px solid var(--btn-focus-color, #646cff);
+  outline-offset: 2px;
+}
+
+/************* Variants *************/
+.btn--primary {
+  background-color: #646cff;
+  color: #ffffff;
+}
+.btn--primary:hover:not(:disabled) {
+  background-color: #535bf2;
+}
+
+.btn--secondary {
+  background-color: #e2e8f0;
+  color: #2d3748;
+}
+.btn--secondary:hover:not(:disabled) {
+  background-color: #cbd5e1;
+}
+
+.btn--outline {
+  background-color: transparent;
+  color: #646cff;
+  border-color: currentColor;
+}
+.btn--outline:hover:not(:disabled) {
+  background-color: rgba(100, 108, 255, 0.1);
+}
+
+.btn--danger {
+  background-color: #e53e3e;
+  color: #ffffff;
+}
+.btn--danger:hover:not(:disabled) {
+  background-color: #c53030;
+}
+
+/************* Sizes *************/
+.btn--sm {
+  font-size: 0.875rem;
+  padding: 0.25rem 0.75rem;
+}
+
+.btn--md {
+  font-size: 1rem; /* default */
+}
+
+.btn--lg {
+  font-size: 1.125rem;
+  padding: 0.75rem 1.25rem;
+}
+
+/************* Disabled + Loading *************/
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Simple CSS spinner so we avoid extra dependencies. */
+.btn__spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  border-right-color: transparent;
+  animation: btn-spin 0.6s linear infinite;
+}
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+} 
