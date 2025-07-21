@@ -3,7 +3,7 @@ import ProductGrid from './ProductGrid';
 import SimpleProductGrid from './SimpleProductGrid';
 import './Search.css';
 
-// LRU Cache Implementation
+// LRU Cache Implementation for Search Results
 class LRUCache {
   constructor(maxSize = 50) {
     this.maxSize = maxSize;
@@ -28,7 +28,7 @@ class LRUCache {
     if (this.cache.has(key)) {
       this.cache.delete(key);
     }
-    // If at capacity, remove least recently used (first item)
+    // If at capacity, remove least accessed used (first item)
     else if (this.cache.size >= this.maxSize) {
       const firstKey = this.cache.keys().next().value;
       this.cache.delete(firstKey);
@@ -49,6 +49,15 @@ class LRUCache {
   clear() {
     this.cache.clear();
   }
+
+  // Get cache statistics for debugging
+  getStats() {
+    return {
+      size: this.cache.size,
+      maxSize: this.maxSize,
+      keys: Array.from(this.cache.keys())
+    };
+  }
 }
 
 const Search = () => {
@@ -60,6 +69,7 @@ const Search = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [recentSearches, setRecentSearches] = useState([]);
+  const [cacheHit, setCacheHit] = useState(false);
 
   // Refs for accessibility and performance
   const inputRef = useRef(null);
@@ -68,8 +78,8 @@ const Search = () => {
   const currentRequestIdRef = useRef(0);
   const abortControllerRef = useRef(null);
 
-  // Proper LRU Cache for suggestions
-  const suggestionCache = useRef(new LRUCache(50)); // Max 50 cached queries
+  // LRU Cache for search results (query -> API response)
+  const searchResultsCache = useRef(new LRUCache(50)); // Max 50 cached search results
 
   // Constants
   const DEBOUNCE_DELAY = 300;
@@ -119,12 +129,19 @@ const Search = () => {
 
     // Check cache first
     const cacheKey = searchQuery.toLowerCase();
-    const cached = suggestionCache.current.get(cacheKey);
+    const cached = searchResultsCache.current.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       setSuggestions(cached.data);
       setIsDropdownOpen(true);
+      setCacheHit(true);
+      console.log('Cache hit for:', searchQuery, 'Cache stats:', searchResultsCache.current.getStats());
+      
+      // Reset cache hit indicator after 2 seconds
+      setTimeout(() => setCacheHit(false), 2000);
       return;
     }
+    
+    setCacheHit(false);
 
     // Cancel previous request
     if (abortControllerRef.current) {
@@ -160,7 +177,7 @@ const Search = () => {
       const data = await response.json();
       
       // Cache the result (LRU will handle eviction if needed)
-      suggestionCache.current.set(cacheKey, {
+      searchResultsCache.current.set(cacheKey, {
         data: data.results,
         timestamp: Date.now()
       });
@@ -290,6 +307,28 @@ const Search = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Cache management functions
+  const clearSearchCache = useCallback(() => {
+    searchResultsCache.current.clear();
+    console.log('Search cache cleared');
+  }, []);
+
+  const getCacheStats = useCallback(() => {
+    return searchResultsCache.current.getStats();
+  }, []);
+
+  // Debug: Log cache stats periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const stats = getCacheStats();
+      if (stats.size > 0) {
+        console.log('Search cache stats:', stats);
+      }
+    }, 30000); // Log every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [getCacheStats]);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -339,6 +378,24 @@ const Search = () => {
               {error && (
                 <div className="search-error" role="alert">
                   {error}
+                </div>
+              )}
+              
+              {/* Cache management button */}
+              <button
+                type="button"
+                onClick={clearSearchCache}
+                className="cache-clear-btn"
+                title="Clear search cache"
+                aria-label="Clear search cache"
+              >
+                🗑️
+              </button>
+              
+              {/* Cache hit indicator */}
+              {cacheHit && (
+                <div className="cache-hit-indicator" role="status" aria-live="polite">
+                  ⚡ Cache hit
                 </div>
               )}
             </div>

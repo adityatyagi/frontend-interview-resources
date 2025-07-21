@@ -50,6 +50,62 @@
   pointer-events: none;
 }
 
+/* Cache clear button */
+.cache-clear-btn {
+  position: absolute;
+  right: 48px; /* Position to the left of spinner */
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  font-size: 16px;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.cache-clear-btn:hover {
+  opacity: 1;
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.cache-clear-btn:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+  opacity: 1;
+}
+
+/* Cache hit indicator */
+.cache-hit-indicator {
+  position: absolute;
+  right: 80px; /* Position to the left of cache clear button */
+  top: 50%;
+  transform: translateY(-50%);
+  background-color: #28a745;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  animation: cacheHitFadeIn 0.3s ease-out;
+  z-index: 10;
+  white-space: nowrap;
+}
+
+@keyframes cacheHitFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
 .spinner {
   width: 20px;
   height: 20px;
@@ -285,5 +341,16 @@
   
   .no-results {
     color: #a0aec0;
+  }
+} 
+
+/* Dark mode support for cache button */
+@media (prefers-color-scheme: dark) {
+  .cache-clear-btn {
+    color: #e2e8f0;
+  }
+  
+  .cache-clear-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
   }
 } 
