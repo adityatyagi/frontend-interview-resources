@@ -101,6 +101,8 @@ export default function Search() {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
 
   const debouncedRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestIdCounterRef = useRef(0);
@@ -133,24 +135,31 @@ export default function Search() {
     }
   }, [selectedIndex]);
 
-  const fetchSuggestions = async (searchTerm: string) => {
+  const fetchSuggestions = async (
+    searchTerm: string,
+    page = 1,
+    isLoadMore = false
+  ) => {
     if (!searchTerm && !searchTerm.trim()) {
       console.log("resetting the suggestions to []");
       setSuggestions([]);
+      setHasMore(false);
+      setCurrentPage(1);
       return;
     }
 
-    const searchedKey = searchTerm.trim().toLowerCase();
+    const searchedKey = `${searchTerm.trim().toLowerCase()}_page_${page}`;
 
-    // check cache - LRU with TTL
-    // check if searchedKey is present and is not expired
-    if (suggestionsCache.current.has(searchedKey, CACHE_TTL)) {
-      const cachedData = suggestionsCache.current.get(searchedKey);
-      if (cachedData) {
-        console.log("cached suggestions", cachedData);
-        setSuggestions([...cachedData.data]);
-        setIsOpen(true);
-        return;
+    // For initial search (page 1), check cache
+    if (page === 1 && !isLoadMore) {
+      if (suggestionsCache.current.has(searchedKey, CACHE_TTL)) {
+        const cachedData = suggestionsCache.current.get(searchedKey);
+        if (cachedData) {
+          console.log("cached suggestions", cachedData);
+          setSuggestions([...cachedData.data]);
+          setIsOpen(true);
+          return;
+        }
       }
     }
 
@@ -166,7 +175,7 @@ export default function Search() {
       const response = await fetch(
         `https://rickandmortyapi.com/api/character?name=${encodeURIComponent(
           searchTerm
-        )}`,
+        )}&page=${page}`,
         {
           signal: abortControllerRef.current.signal,
           headers: {
@@ -188,17 +197,27 @@ export default function Search() {
 
       const data = await response.json();
 
-      // save in LRU cache with TTL
-      suggestionsCache.current.set(searchedKey, {
-        data: data.results,
-        timestamp: Date.now(),
-      });
+      // Update pagination state
+      setHasMore(page < (data.info?.pages || 0));
+      setCurrentPage(page);
+
+      // save in LRU cache with TTL (only for first page)
+      if (page === 1) {
+        suggestionsCache.current.set(searchedKey, {
+          data: data.results,
+          timestamp: Date.now(),
+        });
+      }
 
       console.log(suggestionsCache.current.status());
 
-      // set state
-      setSuggestions(data.results);
-      setIsOpen(true);
+      // set state - append for load more, replace for initial search
+      if (isLoadMore) {
+        setSuggestions((prev) => [...prev, ...data.results]);
+      } else {
+        setSuggestions(data.results);
+        setIsOpen(true);
+      }
     } catch (error) {
       if (error instanceof DOMException && error.name === "Abort") {
         return;
@@ -206,6 +225,7 @@ export default function Search() {
 
       if (requestId === requestIdCounterRef.current) {
         console.error("Something went wrong!");
+        setHasMore(false);
       }
     } finally {
       if (requestId === requestIdCounterRef.current) {
@@ -222,6 +242,13 @@ export default function Search() {
     debouncedRef.current = setTimeout(() => {
       fetchSuggestions(searchTerm);
     }, DEBOUNCE_DELAY);
+  };
+
+  const loadMoreSuggestions = async () => {
+    if (!query.trim() || !hasMore) return;
+
+    const nextPage = currentPage + 1;
+    await fetchSuggestions(query, nextPage, true);
   };
 
   const addToRecentSearches = (query: string) => {
@@ -393,7 +420,11 @@ export default function Search() {
 
       {suggestions?.length > 0 && (
         <div className="mt-8">
-          <ProductGrid suggestions={suggestions} />
+          <ProductGrid
+            suggestions={suggestions}
+            onLoadMore={loadMoreSuggestions}
+            hasMore={hasMore}
+          />
         </div>
       )}
     </div>
