@@ -13,7 +13,7 @@ export function ProductGrid({
   onLoadMore,
   hasMore = false,
 }: ProductGridProps) {
-  const { sentinelRef, isLoading } = useInfiniteScrolling({
+  const { sentinelRef: lastElementRef, isLoading } = useInfiniteScrolling({
     onLoadMore: onLoadMore || (() => {}),
     hasMore,
     threshold: 0.1,
@@ -33,7 +33,7 @@ export function ProductGrid({
       {/* Sentinel element for infinite scroll detection */}
       {hasMore && (
         <div
-          ref={sentinelRef}
+          ref={lastElementRef}
           className="h-20 w-full flex items-center justify-center"
         >
           {isLoading && (

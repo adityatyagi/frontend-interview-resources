@@ -13,12 +13,17 @@ import RecentSearches from "./RecentSearches";
 
 // [oldest,... ,... ,... ,... newest]
 // re-orderdering
-// leaset "accessed" element is removed
+// least "accessed" element is removed
 interface CacheEntry<V> {
   value: V;
   timestamp: number;
 }
 
+// suggestion cache is LRU based.
+// [START .....................END]
+// [oldest,... ,... ,... ,... newest]
+// when we get a new element, we remove the oldest element
+// if we are accessing an element, we move it to the end of the list (at the newest position)
 class LRUCache<K, V> {
   private maxSize: number;
   private cache: Map<K, CacheEntry<V>>;
@@ -39,7 +44,7 @@ class LRUCache<K, V> {
     // delete from the current position
     this.cache.delete(key);
 
-    // update in the new position
+    // update in the new position - at the end
     this.cache.set(key, entry);
 
     return entry.value;
@@ -90,7 +95,7 @@ class LRUCache<K, V> {
   status(): { size: number; keys: K[] } {
     return {
       size: this.cache.size,
-      keys: Array.from(this.cache.keys()),
+      keys: Array.from(this.cache.keys()), // gives array of keys
     };
   }
 }
@@ -198,10 +203,12 @@ export default function Search() {
       const data = await response.json();
 
       // Update pagination state
-      setHasMore(page < (data.info?.pages || 0));
+      const totalPages = data.info?.pages ?? 1; // Default to 1 page
+      const hasMorePages = page < totalPages; // Clear intent
+      setHasMore(hasMorePages);
       setCurrentPage(page);
 
-      // save in LRU cache with TTL (only for first page)
+      // IMP: save in LRU cache with TTL (only for first page)
       if (page === 1) {
         suggestionsCache.current.set(searchedKey, {
           data: data.results,
@@ -255,6 +262,9 @@ export default function Search() {
     if (!query) return;
 
     // MRU pattern
+    // [START .....................END]
+    // when we get a new element, we remove the oldest element if the max size is reached
+    // if we are accessing an element, we move it to the end of the list (at the newest position)
     // check for duplicates
     setRecentSearches((prevRecentSearches) => {
       const filteredRecentSearches = prevRecentSearches.filter(
@@ -353,6 +363,7 @@ export default function Search() {
     inputRef.current?.focus();
   };
 
+  // to open the suggestions list
   const handleInputFocus = () => {
     if (suggestions.length > 0) {
       setIsOpen(true);
